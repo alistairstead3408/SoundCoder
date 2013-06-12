@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:gravity="center">
+
+
+	<Button android:text="Train" android:id="@+id/bTraining" android:layout_width="400px" android:layout_height="wrap_content" android:gravity="center"></Button>
+		<Button android:text="Program" android:id="@+id/bProgram" android:layout_width="400px" android:layout_height="wrap_content"></Button>
+	<Button android:text="Perform" android:id="@+id/bCapture" android:layout_width="400px" android:layout_height="wrap_content" android:gravity="center"></Button>
+	<Button android:text="Quit" android:id="@+id/bQuit" android:layout_width="400px" android:layout_height="wrap_content" android:gravity="center"></Button>
+
+
+
+</LinearLayout>

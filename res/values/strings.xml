@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="app_name">SoundCoder</string>
+<string name="hello">Hello!</string>
+<string name="about_str">SoundCoder is an inference-based programmable music synthesizer.</string>
+<string name="about_title">About Soundecoder</string>
+<string name="about_menu">About</string>
+<string name="ok">O.K.</string>
+<string name="menu1">add new rule set</string>
+</resources>
