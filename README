@@ -1,0 +1,12 @@
+You need to have the following installed:
+XCode
+Swig (installed by hand, not using ports)
+android-ndk-r4 in the ../../ directory
+opencv in the ../../ directory, compiled
+
+If there are any errors, it's likely due to the MK files
+not being setup properly.
+
+Application.mk and Android.mk
+
+especially the required platform number in Application.mk
