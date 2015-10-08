@@ -5,12 +5,18 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import stead.alistair.com.osc.OSCHandler;
-
+import stead.alistair.com.tiles.Tile;
+import stead.alistair.com.tiles.TileAttack;
+import stead.alistair.com.tiles.TileOneBlob;
+import stead.alistair.com.tiles.TileProperty;
+import stead.alistair.com.tiles.TileReference;
+import stead.alistair.com.tiles.TileSynth;
+import stead.alistair.com.tiles.TileTwoBlob;
 import android.util.Log;
 
 public class SystemState extends Thread{
 	
-	HashMap<Integer, ArrayList<GridObjectView>> mRules;
+	HashMap<Integer, ArrayList<Tile>> mRules;
 	private final static String TAG = "SystemState";
 	
 	//data structure for system state, just guards, still in gridobjectview
@@ -26,7 +32,7 @@ public class SystemState extends Thread{
 	public boolean started = false;
 	
 	
-	public SystemState(HashMap<Integer, ArrayList<GridObjectView>> sentences, float [] blobData){
+	public SystemState(HashMap<Integer, ArrayList<Tile>> sentences, float [] blobData){
 		stateChangeStack = new ArrayList<Object>();
 		//Initialise stateItems from info when training
 		mStateItemList = new ArrayList<StateItem>();
@@ -133,19 +139,19 @@ public class SystemState extends Thread{
 		
 	}
 	
-	private synchronized void inferMessages(ArrayList<StateItem> stateItemList,  HashMap<Integer, ArrayList<GridObjectView>> rules) {
+	private synchronized void inferMessages(ArrayList<StateItem> stateItemList,  HashMap<Integer, ArrayList<Tile>> rules) {
 		Long startTime = System.currentTimeMillis();
-		Iterator it = mRules.keySet().iterator();
+		Iterator<Integer> it = mRules.keySet().iterator();
 		while(it.hasNext()){
 			Object nextKey = it.next();
-			ArrayList<GridObjectView> sentence = (ArrayList<GridObjectView>) mRules.get(nextKey);
+			ArrayList<Tile> sentence = (ArrayList<Tile>) mRules.get(nextKey);
 			
 			boolean triggeredSentence = true;
 			int identifier = -1;
 			float time = 0.0f;
 			String valueStr = "";
 			int valueInt = 0;
-			GridObjectView currentObject;
+			Tile currentObject;
 			//Go through each guard in the sentence and check it is valid
 			for(int i = 0; i < sentence.size(); i++){
 				currentObject = sentence.get(i);
@@ -153,16 +159,16 @@ public class SystemState extends Thread{
 				if(TileReference.getCatagory(currentObject.getIconID()) == TileReference.CATAGORY_GUARD){
 					switch(sentence.get(i).getIconID()){
 					case R.drawable.tile_blob_entrance:
-						if(!stateItemList.get(currentObject.getColourID()).getEnter())
+						if(!stateItemList.get(((TileOneBlob)currentObject).getColourID()).getEnter())
 							triggeredSentence = false;
 						break;
 					case R.drawable.tile_blob_see:
-						if(!stateItemList.get(currentObject.getColourID()).getSee())
+						if(!stateItemList.get(((TileOneBlob)currentObject).getColourID()).getSee())
 							triggeredSentence = false;
 						break;
 						
 					case R.drawable.tile_blob_exit:
-						if(!stateItemList.get(currentObject.getColourID()).getExit())
+						if(!stateItemList.get(((TileOneBlob)currentObject).getColourID()).getExit())
 							triggeredSentence = false;
 						break;
 					case R.drawable.tile_blob_containment:
@@ -171,10 +177,11 @@ public class SystemState extends Thread{
 						break;
 						
 					case R.drawable.tile_blob_next:
-						if(!stateItemList.get(currentObject.getColourID()).getSee() || !stateItemList.get(currentObject.getColourID2()).getSee()){
-							if(currentObject.getColourID() == currentObject.getColourID2())
+						TileTwoBlob twoBlobTile = (TileTwoBlob) currentObject;
+						if(!stateItemList.get(twoBlobTile.getColourID()).getSee() || !stateItemList.get(twoBlobTile.getColourID2()).getSee()){
+							if(twoBlobTile.getColourID() == (twoBlobTile.getColourID2()))
 							{
-								if(stateItemList.get(currentObject.getColourID()).getCount() <= 1)
+								if(stateItemList.get(((TileTwoBlob)currentObject).getColourID()).getCount() <= 1)
 									triggeredSentence = false;
 							}
 							else
@@ -192,24 +199,24 @@ public class SystemState extends Thread{
 				
 				//Get the identifier
 				if(TileReference.getCatagory(currentObject.getIconID()) == TileReference.CATAGORY_IDENTIFIER){
-					identifier = currentObject.getSynthNo();
+					identifier = ((TileSynth)currentObject).getSynthNo();
 				}
 				
 				//Get the value
 				if(TileReference.getCatagory(currentObject.getIconID()) == TileReference.CATAGORY_MODIFIER){
 					switch(currentObject.getIconID()){
 					case R.drawable.tile_modifier_value:
-						valueInt = (int) (currentObject.getValue() * 100);
+						valueInt = (int) (((TileProperty)currentObject).getValue() * 100);
 						valueStr = MidiReference.getNote((int)(valueInt));
 						time = 0.0f;
 						break;
 					case R.drawable.tile_modifier_attack:
-						valueInt = (int) (currentObject.getValue() * 100);
+						valueInt = (int) (((TileProperty)currentObject).getValue() * 100);
 						valueStr = MidiReference.getNote((int)(valueInt));
-						time = currentObject.getTime();
+						time = ((TileAttack)currentObject).getTime();
 						break;
 					case R.drawable.tile_modifier_area:
-						valueInt = (int) (stateItemList.get(currentObject.getColourID()).getAreaPercentage() * 100);
+						valueInt = (int) (stateItemList.get(((TileOneBlob)currentObject).getColourID()).getAreaPercentage() * 100);
 						Log.e(TAG, "AreaVal: " + valueInt);
 						valueStr = MidiReference.getNote((int)(valueInt));
 						time = 0.0f;

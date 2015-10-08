@@ -8,9 +8,6 @@
 
 package stead.alistair.com.soundcoder.jni;
 
-import com.opencv.jni.Mat;
-import com.opencv.jni.image_pool;// import the image_pool interface for playing nice with
-								 // android-opencv
 
 /** Processor - for processing images that are stored in an image pool
 */
@@ -43,9 +40,9 @@ public class Processor {
     this(cvcameraJNI.new_Processor(), true);
   }
 
-  public float at(Mat in, int row, int col) {
-    return cvcameraJNI.Processor_at(swigCPtr, this, Mat.getCPtr(in), in, row, col);
-  }
+//  public float at(Mat in, int row, int col) {
+//    return cvcameraJNI.Processor_at(swigCPtr, this, Mat.getCPtr(in), in, row, col);
+//  }
 
   public int getLongLength(long ptr) {
     return cvcameraJNI.Processor_getLongLength(swigCPtr, this, ptr);
@@ -55,21 +52,21 @@ public class Processor {
     return cvcameraJNI.Processor_getLongVal(swigCPtr, this, ptr, index);
   }
 
-  public float getLineHueValues(int input_idx, image_pool pool) {
-    return cvcameraJNI.Processor_getLineHueValues(swigCPtr, this, input_idx, image_pool.getCPtr(pool), pool);
-  }
-
-  public int getBlobLabels(int input_idx, image_pool pool, int satThreshold, int valThreshold) {
-    return cvcameraJNI.Processor_getBlobLabels(swigCPtr, this, input_idx, image_pool.getCPtr(pool), pool, satThreshold, valThreshold);
-  }
-
-  public void filterBackground(int input_idx, image_pool pool, int satThreshold, int valThreshold) {
-    cvcameraJNI.Processor_filterBackground(swigCPtr, this, input_idx, image_pool.getCPtr(pool), pool, satThreshold, valThreshold);
-  }
-
-  public long detectNewBlobs(long inputBlobControl, int input_idx, image_pool pool, int satThreshold, int valThreshold) {
-    return cvcameraJNI.Processor_detectNewBlobs(swigCPtr, this, inputBlobControl, input_idx, image_pool.getCPtr(pool), pool, satThreshold, valThreshold);
-  }
+//  public float getLineHueValues(int input_idx, image_pool pool) {
+//    return cvcameraJNI.Processor_getLineHueValues(swigCPtr, this, input_idx, image_pool.getCPtr(pool), pool);
+//  }
+//
+//  public int getBlobLabels(int input_idx, image_pool pool, int satThreshold, int valThreshold) {
+//    return cvcameraJNI.Processor_getBlobLabels(swigCPtr, this, input_idx, image_pool.getCPtr(pool), pool, satThreshold, valThreshold);
+//  }
+//
+//  public void filterBackground(int input_idx, image_pool pool, int satThreshold, int valThreshold) {
+//    cvcameraJNI.Processor_filterBackground(swigCPtr, this, input_idx, image_pool.getCPtr(pool), pool, satThreshold, valThreshold);
+//  }
+//
+//  public long detectNewBlobs(long inputBlobControl, int input_idx, image_pool pool, int satThreshold, int valThreshold) {
+//    return cvcameraJNI.Processor_detectNewBlobs(swigCPtr, this, inputBlobControl, input_idx, image_pool.getCPtr(pool), pool, satThreshold, valThreshold);
+//  }
 
   public long getBlobControl(long knn) {
     return cvcameraJNI.Processor_getBlobControl(swigCPtr, this, knn);

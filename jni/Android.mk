@@ -1,26 +1,19 @@
-# date: January, 2011 
-# author: Alistair Stead
-# contact: alistair.stead@gmail.com
-#
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-#pass in OPENCV_ROOT or define it here
-#OPENCV_ROOT := ../../opencv/
+# OpenCV
+OPENCV_CAMERA_MODULES:=on
+OPENCV_INSTALL_MODULES:=on
+include ../../opencvsdk/native/jni/OpenCV.mk
 
-#define OPENCV_INCLUDES
-include $(OPENCV_ROOT)/includes.mk
-#define OPENCV_LIBS
-include $(OPENCV_ROOT)/libs.mk
 
-LOCAL_LDLIBS += $(OPENCV_LIBS) $(ANDROID_OPENCV_LIBS) -llog -lGLESv2
-    
-LOCAL_C_INCLUDES +=  $(OPENCV_INCLUDES) $(ANDROID_OPENCV_INCLUDES)
 
-LOCAL_MODULE    := cvcamera
 
-LOCAL_SRC_FILES := Processor.cpp ./knn/LocalKNearest.cpp gen/cvcamera_swig.cpp ./blobs/BlobControl.cpp ./blobs/Blob.cpp
+
+
+LOCAL_MODULE    := native_skin
+LOCAL_SRC_FILES := jni_part.cpp
+LOCAL_LDLIBS +=  -llog -ldl
 
 include $(BUILD_SHARED_LIBRARY)
-

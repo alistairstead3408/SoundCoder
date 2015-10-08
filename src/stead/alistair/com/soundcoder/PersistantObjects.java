@@ -2,16 +2,18 @@ package stead.alistair.com.soundcoder;
 
 import java.util.ArrayList;
 
+import stead.alistair.com.tiles.Tile;
+
 public class PersistantObjects {
 	
-	private static ArrayList<ArrayList<GridObjectView>> mGrid = null;
+	private static ArrayList<ArrayList<Tile>> mGrid = null;
 	private static SystemState mState = null;
 	
-	public static void setGrid(ArrayList<ArrayList<GridObjectView>> grid){
+	public static void setGrid(ArrayList<ArrayList<Tile>> grid){
 		mGrid = grid; 
 	}
 	
-	public static ArrayList<ArrayList<GridObjectView>> getGrid(){
+	public static ArrayList<ArrayList<Tile>> getGrid(){
 		return mGrid;
 	}
 

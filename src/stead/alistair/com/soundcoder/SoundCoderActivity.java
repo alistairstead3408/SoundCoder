@@ -1,6 +1,5 @@
 package stead.alistair.com.soundcoder;
 
-import stead.alistair.com.osc.OSCHandler;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -36,19 +35,20 @@ public class SoundCoderActivity extends Activity {
 
 		bTraining.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				Intent intent = new Intent(SoundCoderActivity.this,
-						TrainingActivity.class);
-				if (SoundCoderActivity.this.blobData != null) {
-					intent = new Intent(SoundCoderActivity.this,
-							TrainingActivity.class);
-					Bundle bundle = new Bundle();
-					bundle.putLongArray("bundleBlobData",SoundCoderActivity.this.blobData);
-					intent.putExtra("blobData", bundle);
-				}
+//				Intent intent = new Intent(SoundCoderActivity.this,
+//						TrainingActivity.class);
+//				if (SoundCoderActivity.this.blobData != null) {
+//					intent = new Intent(SoundCoderActivity.this,
+//							TrainingActivity.class);
+//					Bundle bundle = new Bundle();
+//					bundle.putLongArray("bundleBlobData",SoundCoderActivity.this.blobData);
+//					intent.putExtra("blobData", bundle);
+//				}
+//				
+//				startActivityForResult(intent,
+//						SoundCoderActivity.TRAINING_FAILED);
 				
-				startActivityForResult(intent,
-						SoundCoderActivity.TRAINING_FAILED);
-				
+				SoundCoderActivity.this.startActivityForResult(new Intent(SoundCoderActivity.this, ActivityCamera.class), SoundCoderActivity.TRAINING_FAILED);
 
 			}
 		});
@@ -101,7 +101,7 @@ public class SoundCoderActivity extends Activity {
 			}
 		});
 
-		bProgram.setEnabled(false);
+		bProgram.setEnabled(true);
 		bPerformance.setEnabled(false);
 		/*
 		OSCHandler oschandler = new OSCHandler(); 

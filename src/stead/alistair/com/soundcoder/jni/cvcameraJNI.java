@@ -8,7 +8,7 @@
 
 package stead.alistair.com.soundcoder.jni;
 
-import com.opencv.jni.*; //import the android-opencv jni wrappers
+import org.opencv.core.Mat;
 
 public class cvcameraJNI {
 
@@ -36,10 +36,10 @@ public class cvcameraJNI {
   public final static native float Processor_at(long jarg1, Processor jarg1_, long jarg2, Mat jarg2_, int jarg3, int jarg4);
   public final static native int Processor_getLongLength(long jarg1, Processor jarg1_, long jarg2);
   public final static native long Processor_getLongVal(long jarg1, Processor jarg1_, long jarg2, int jarg3);
-  public final static native float Processor_getLineHueValues(long jarg1, Processor jarg1_, int jarg2, long jarg3, image_pool jarg3_);
-  public final static native int Processor_getBlobLabels(long jarg1, Processor jarg1_, int jarg2, long jarg3, image_pool jarg3_, int jarg4, int jarg5);
-  public final static native void Processor_filterBackground(long jarg1, Processor jarg1_, int jarg2, long jarg3, image_pool jarg3_, int jarg4, int jarg5);
-  public final static native long Processor_detectNewBlobs(long jarg1, Processor jarg1_, long jarg2, int jarg3, long jarg4, image_pool jarg4_, int jarg5, int jarg6);
+//  public final static native float Processor_getLineHueValues(long jarg1, Processor jarg1_, int jarg2, long jarg3, image_pool jarg3_);
+//  public final static native int Processor_getBlobLabels(long jarg1, Processor jarg1_, int jarg2, long jarg3, image_pool jarg3_, int jarg4, int jarg5);
+//  public final static native void Processor_filterBackground(long jarg1, Processor jarg1_, int jarg2, long jarg3, image_pool jarg3_, int jarg4, int jarg5);
+//  public final static native long Processor_detectNewBlobs(long jarg1, Processor jarg1_, long jarg2, int jarg3, long jarg4, image_pool jarg4_, int jarg5, int jarg6);
   public final static native long Processor_getBlobControl(long jarg1, Processor jarg1_, long jarg2);
   public final static native void Processor_deleteObject(long jarg1, Processor jarg1_, long jarg2);
 }

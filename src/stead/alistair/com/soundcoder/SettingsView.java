@@ -1,5 +1,11 @@
 package stead.alistair.com.soundcoder;
 
+import stead.alistair.com.tiles.Tile;
+import stead.alistair.com.tiles.TileAttack;
+import stead.alistair.com.tiles.TileOneBlob;
+import stead.alistair.com.tiles.TileReference;
+import stead.alistair.com.tiles.TileSynth;
+import stead.alistair.com.tiles.TileTwoBlob;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -9,19 +15,17 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 
 public class SettingsView extends View implements OnSeekBarChangeListener {
 
 	/** This is our local copy of the tile we'll be looking at */
-	GridObjectView tile;
+	Tile tile;
+	
 
 	/** Some reusable variables */
 	Drawable drawable;
@@ -45,12 +49,10 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 	private boolean seekbar = false;
 	private boolean seekbar2 = false;
 	
-	private Context mContext;
 
-	public SettingsView(GridObjectView tileInput, Context context,
+	public SettingsView(Tile tileInput, Context context,
 			float[] blobData, Handler mHandlerInput) {
 		super(context);
-		mContext = context;
 		setWillNotDraw(false);
 		mBlobData = blobData;
 		highlightPaint.setColor(Color.RED);
@@ -78,17 +80,17 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 			drawable = this.getResources().getDrawable(R.drawable.popup_toolbar);
 			bounds.left = 0;
 			bounds.top = 0;
-			bounds.right = 800;
-			bounds.bottom = 480;
+			bounds.right = canvas.getWidth();
+			bounds.bottom = canvas.getHeight();
 			drawable.setBounds(bounds);
 			drawable.draw(canvas);
 	
 			// Add some text at the top to make it look nice
-			canvas.drawText(TileReference.getTag(tile.getIconID()) + " Settings ",
-					155, 145, blackPaintTitle);
+			canvas.drawText(TileReference.getTag(tile.getIconID()) + " Settings ", 155, 145, blackPaintTitle);
 	
 			drawTilePreview(canvas);
-	
+			
+			// This draws the custom settings
 			switch (type) {
 			case TileReference.TYPE_BLOB_PROPERTY:
 			case TileReference.TYPE_BLOB_ONE:
@@ -107,7 +109,6 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 				drawSynthID(canvas);
 				break;
 			case TileReference.TYPE_ATTACK:
-				Log.e(TAG, "TYPE_ATTACK");
 				drawAttack(canvas);
 				break;
 			}
@@ -117,21 +118,22 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 	
 	private void drawTilePreview(Canvas c){
 		// Draw the icon of the gridObject*********
-		bounds.left = 160;
-		bounds.right = bounds.left + 80;
-		bounds.top = 200;
-		bounds.bottom = bounds.top + 80;
+		bounds.left = 400;
+		bounds.right = bounds.left + tile.getTileWidth();
+		bounds.top = 300;
+		bounds.bottom = bounds.top + tile.getTileHeight();
 		tile.DrawInBounds(c, bounds);
-		c.drawLine(260, 175, 260, 350, blackPaintNormal);
+		c.drawLine(260, 375, 260, 350, blackPaintNormal);
 		blackPaintNormal.setColor(Color.BLACK);
 		blackPaintNormal.setTextSize(28);
-		c.drawText("Preview", 150, 190, blackPaintNormal);
+		c.drawText("Preview", 150, 390, blackPaintNormal);
 	}
 	
 	
 
 	public void drawBlobOne(Canvas canvas) {
-		Log.e(TAG, "drawBlobOne" + tile.getColor1());
+		TileOneBlob t1b = (TileOneBlob) tile;
+		Log.e(TAG, "drawBlobOne" + t1b.getColor());
 		Paint tempPaint = new Paint();
 		Rect mRect = new Rect(0, 0, 0, 0);
 		/** Draw colour picker grid - selection highlighted in red rectangle */
@@ -149,7 +151,7 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 			tempPaint.setColor(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
 			canvas.drawRect(mRect, tempPaint);
 			/** Show the user which colour the tile is currently based on */
-			if (tempPaint.getColor() == tile.getColor1())
+			if (tempPaint.getColor() == t1b.getColor())
 				canvas.drawRect(mRect, highlightPaint);
 
 		}
@@ -158,18 +160,18 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 	
 	public void drawAttack(Canvas canvas){
 		if (!seekbar2 && type == TileReference.TYPE_ATTACK) {
-			mHandler.obtainMessage(ProgramActivity.HANDLER_SEEKBAR2).sendToTarget();
+			mHandler.obtainMessage(ProgramActivity.HandlerMessage.HANDLER_SEEKBAR2.ordinal()).sendToTarget();
 			
 			seekbar2 = true;
 		}
 		
 			synchronized(ProgramActivity.drawingMutex){
-				String str = "Final Value: " + MidiReference.getNote((int)( tile.getValue() * 100)) + "/" + (int) (tile.getValue() * 100);
+				String str = "Final Value: " + MidiReference.getNote((int)( ((TileAttack)tile).getValue() * 100)) + "/" + (int) (((TileAttack)tile).getValue() * 100);
 				Paint character = new Paint();
 				character.setColor(Color.BLACK);
 				character.setTextSize(40);
 				canvas.drawText(str,280, 240, character);
-				str = "Time: " + tile.getTime() + "s";
+				str = "Time: " + ((TileAttack)tile).getTime() + "s";
 				canvas.drawText(str,280, 330, character);
 			}
 		
@@ -177,7 +179,7 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 
 
 	public void touchBlobOne(MotionEvent me) {
-		Log.e(TAG, "TouchBlobOne " + tile.getColor1());
+		Log.e(TAG, "TouchBlobOne " + ((TileOneBlob)tile).getColor());
 		
 		Rect mRect = new Rect(0, 0, 0, 0);
 		/**
@@ -199,8 +201,8 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 				Log.e(TAG, "CONTAINS*******");
 				float[] temp = { mBlobData[i], mBlobData[i + 1],
 						mBlobData[i + 2] };
-				tile.setColourID(i/3);
-				tile.setColor1(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
+				((TileOneBlob)tile).setColourID(i/3);
+				((TileOneBlob)tile).setColor(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
 				tile.invalidate();
 				this.invalidate();
 			}
@@ -210,60 +212,60 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 	}
 
 	public void drawBlobTwo(Canvas canvas, int iconid) {
-		String src1 = "Outer";
-		String src2 = "Inner";
-		switch(iconid){
-		case R.drawable.tile_blob_next:
-		case R.drawable.tile_blob_nextto:
-			src1 = "First";
-			src2 = "Second";
-		}
-		blackPaintNormal.setColor(Color.BLACK);
-		blackPaintNormal.setTextSize(28);
-		Paint tempPaint = new Paint();
-		Rect mRect = new Rect(0, 0, 0, 0);
-
-		canvas.drawText(src1, 280, 200, blackPaintNormal);
-		/** Draw colour picker grid - selection highlighted in red rectangle */
-		for (int i = 0; i < mBlobData.length-2 && i < 18; i += 3) {
-			if ((i / 3) % 2 == 0) {
-				mRect.top = 225;
-				mRect.bottom = 275;
-			} else {
-				mRect.top = 285;
-				mRect.bottom = 335;
-			}
-			mRect.left = 280 + (i / 6 * 60);
-			mRect.right = mRect.left + 50;
-			float[] temp = { mBlobData[i], mBlobData[i + 1], mBlobData[i + 2] };
-			tempPaint.setColor(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
-			canvas.drawRect(mRect, tempPaint);
-			/** Show the user which colour the tile is currently based on */
-			if (tempPaint.getColor() == tile.getColor1())
-				canvas.drawRect(mRect, highlightPaint);
-
-		}
-		canvas.drawLine(470, 175, 470, 350, blackPaintNormal);
-
-		canvas.drawText(src2, 480, 200, blackPaintNormal);
-		for (int i = 0; i < mBlobData.length-2 && i < 18; i += 3) {
-			if ((i / 3) % 2 == 0) {
-				mRect.top = 225;
-				mRect.bottom = 275;
-			} else {
-				mRect.top = 285;
-				mRect.bottom = 335;
-			}
-			mRect.left = 480 + (i / 6 * 60);
-			mRect.right = mRect.left + 50;
-			float[] temp = { mBlobData[i], mBlobData[i + 1], mBlobData[i + 2] };
-			tempPaint.setColor(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
-			canvas.drawRect(mRect, tempPaint);
-			/** Show the user which colour the tile is currently based on */
-			if (tempPaint.getColor() == tile.getColor2())
-				canvas.drawRect(mRect, highlightPaint);
-
-		}
+//		String src1 = "Outer";
+//		String src2 = "Inner";
+//		switch(iconid){
+//		case R.drawable.tile_blob_next:
+//		case R.drawable.tile_blob_nextto:
+//			src1 = "First";
+//			src2 = "Second";
+//		}
+//		blackPaintNormal.setColor(Color.BLACK);
+//		blackPaintNormal.setTextSize(28);
+//		Paint tempPaint = new Paint();
+//		Rect mRect = new Rect(0, 0, 0, 0);
+//
+//		canvas.drawText(src1, 280, 200, blackPaintNormal);
+//		/** Draw colour picker grid - selection highlighted in red rectangle */
+//		for (int i = 0; i < mBlobData.length-2 && i < 18; i += 3) {
+//			if ((i / 3) % 2 == 0) {
+//				mRect.top = 225;
+//				mRect.bottom = 275;
+//			} else {
+//				mRect.top = 285;
+//				mRect.bottom = 335;
+//			}
+//			mRect.left = 280 + (i / 6 * 60);
+//			mRect.right = mRect.left + 50;
+//			float[] temp = { mBlobData[i], mBlobData[i + 1], mBlobData[i + 2] };
+//			tempPaint.setColor(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
+//			canvas.drawRect(mRect, tempPaint);
+//			/** Show the user which colour the tile is currently based on */
+//			if (tempPaint.getColor() == tile.getColor1())
+//				canvas.drawRect(mRect, highlightPaint);
+//
+//		}
+//		canvas.drawLine(470, 175, 470, 350, blackPaintNormal);
+//
+//		canvas.drawText(src2, 480, 200, blackPaintNormal);
+//		for (int i = 0; i < mBlobData.length-2 && i < 18; i += 3) {
+//			if ((i / 3) % 2 == 0) {
+//				mRect.top = 225;
+//				mRect.bottom = 275;
+//			} else {
+//				mRect.top = 285;
+//				mRect.bottom = 335;
+//			}
+//			mRect.left = 480 + (i / 6 * 60);
+//			mRect.right = mRect.left + 50;
+//			float[] temp = { mBlobData[i], mBlobData[i + 1], mBlobData[i + 2] };
+//			tempPaint.setColor(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
+//			canvas.drawRect(mRect, tempPaint);
+//			/** Show the user which colour the tile is currently based on */
+//			if (tempPaint.getColor() == tile.getColor2())
+//				canvas.drawRect(mRect, highlightPaint);
+//
+//		}
 
 	}
 
@@ -287,9 +289,9 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 			mRect.right = mRect.left + 50;
 			if (mRect.contains((int) me.getX(), (int) me.getY())) {
 				float[] temp = { mBlobData[i], mBlobData[i + 1], mBlobData[i + 2] };
-				tile.setColourID(i/3);
+				((TileTwoBlob)tile).setColourID(i/3);
 				Log.e(TAG, "TouchBlob1: " + (i/3));
-				tile.setColor1(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
+				((TileTwoBlob)tile).setColor1(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
 				tile.invalidate();
 				this.invalidate();
 			}
@@ -308,8 +310,8 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 			if (mRect.contains((int) me.getX(), (int) me.getY())) {
 				float[] temp = { mBlobData[i], mBlobData[i + 1], mBlobData[i + 2] };
 				Log.e(TAG, "TouchBlob2: " + (i/3));
-				tile.setColourID2(i/3);
-				tile.setColor2(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
+				((TileTwoBlob)tile).setColourID2(i/3);
+				((TileTwoBlob)tile).setColor2(Color.rgb((int)mBlobData[i], (int)mBlobData[i + 1],(int) mBlobData[i + 2]));
 				tile.invalidate();
 				this.invalidate();
 			}
@@ -327,22 +329,22 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 	}
 
 	public void drawVar(Canvas canvas) {
-		if (!seekbar && type == TileReference.TYPE_VAR) {
-			mHandler.obtainMessage(ProgramActivity.HANDLER_SEEKBAR)
-					.sendToTarget();
-			
-			seekbar = true;
-		}
-		
-			synchronized(ProgramActivity.drawingMutex){
-				String str = MidiReference.getNote((int)( tile.getValue() * 100)) + "/" + (int) (tile.getValue() * 100);
-				Paint character = new Paint();
-				character.setColor(Color.BLACK);
-				character.setTextSize(40);
-				character.setShadowLayer(3, 5, 5, Color.GRAY);
-				canvas.drawText(str,300, 320, character);
-			}
-		
+//		if (!seekbar && type == TileReference.TYPE_VAR) {
+//			mHandler.obtainMessage(ProgramActivity.HANDLER_SEEKBAR)
+//					.sendToTarget();
+//			
+//			seekbar = true;
+//		}
+//		
+//			synchronized(ProgramActivity.drawingMutex){
+//				String str = MidiReference.getNote((int)( tile.getValue() * 100)) + "/" + (int) (tile.getValue() * 100);
+//				Paint character = new Paint();
+//				character.setColor(Color.BLACK);
+//				character.setTextSize(40);
+//				character.setShadowLayer(3, 5, 5, Color.GRAY);
+//				canvas.drawText(str,300, 320, character);
+//			}
+//		
 
 	}
 
@@ -357,19 +359,19 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 				Log.e(TAG, "Close Settings");
 				if (seekbar) {
 					mHandler.obtainMessage(
-							ProgramActivity.HANDLER_SEEKBAR_REMOVE)
+							ProgramActivity.HandlerMessage.HANDLER_SEEKBAR_REMOVE.ordinal())
 							.sendToTarget();
 					seekbar = false;
 					
 				}
 				if(seekbar2){
 					mHandler.obtainMessage(
-							ProgramActivity.HANDLER_SEEKBAR_REMOVE)
+							ProgramActivity.HandlerMessage.HANDLER_SEEKBAR_REMOVE.ordinal())
 							.sendToTarget();
 					seekbar2 = false;
 				}
 
-				mHandler.obtainMessage(ProgramActivity.HANDLER_SETTINGS_CLOSE)
+				mHandler.obtainMessage(ProgramActivity.HandlerMessage.HANDLER_SETTINGS_CLOSE.ordinal())
 						.sendToTarget();
 			} 
 			else 
@@ -403,31 +405,31 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 	
 	
 	public void drawSynthID(Canvas canvas){
-		//Draw minus button
-		drawable = mContext.getResources().getDrawable(R.drawable.button_minus);
-		bounds.left = 300;
-		bounds.right = bounds.left + 50;
-		bounds.top = 250;
-		bounds.bottom = bounds.top + 50;
-		drawable.setBounds(bounds);
-		drawable.draw(canvas);
-		
-		//Draw text preview in between
-		String str = TileReference.getSynthString(tile.getSynthNo());
-		Paint character = new Paint();
-		character.setColor(Color.BLACK);
-		character.setTextSize(100);
-		character.setShadowLayer(3, 5, 5, Color.GRAY);
-		canvas.drawText(str,400, 300, character);
-		
-		//Draw plus button
-		drawable = mContext.getResources().getDrawable(R.drawable.button_plus);
-		bounds.left = 525;
-		bounds.right = bounds.left + 50;
-		bounds.top = 250;
-		bounds.bottom = bounds.top + 50;
-		drawable.setBounds(bounds);
-		drawable.draw(canvas);
+//		//Draw minus button
+//		drawable = mContext.getResources().getDrawable(R.drawable.button_minus);
+//		bounds.left = 300;
+//		bounds.right = bounds.left + 50;
+//		bounds.top = 250;
+//		bounds.bottom = bounds.top + 50;
+//		drawable.setBounds(bounds);
+//		drawable.draw(canvas);
+//		
+//		//Draw text preview in between
+//		String str = TileReference.getSynthString(tile.getSynthNo());
+//		Paint character = new Paint();
+//		character.setColor(Color.BLACK);
+//		character.setTextSize(100);
+//		character.setShadowLayer(3, 5, 5, Color.GRAY);
+//		canvas.drawText(str,400, 300, character);
+//		
+//		//Draw plus button
+//		drawable = mContext.getResources().getDrawable(R.drawable.button_plus);
+//		bounds.left = 525;
+//		bounds.right = bounds.left + 50;
+//		bounds.top = 250;
+//		bounds.bottom = bounds.top + 50;
+//		drawable.setBounds(bounds);
+//		drawable.draw(canvas);
 		
 	}
 	
@@ -441,8 +443,8 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 		
 		if(bounds.contains((int)me.getRawX(), (int)me.getRawY())){
 			int tempNo;
-			if((tempNo = tile.getSynthNo()) > 1){
-				tile.setSynthNo(tempNo - 1);
+			if((tempNo = ((TileSynth)tile).getSynthNo()) > 1){
+				((TileSynth)tile).setSynthNo(tempNo - 1);
 			}
 		}
 		
@@ -454,8 +456,8 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 		
 		if(bounds.contains((int)me.getRawX(), (int)me.getRawY())){
 			int tempNo;
-			if((tempNo = tile.getSynthNo()) < 26){
-				tile.setSynthNo(tempNo + 1);
+			if((tempNo = ((TileSynth)tile).getSynthNo()) < 26){
+				((TileSynth)tile).setSynthNo(tempNo + 1);
 			}
 		}
 		
@@ -469,15 +471,15 @@ public class SettingsView extends View implements OnSeekBarChangeListener {
 
 	public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
 		//The Id's have been set so value is 1 and time is 2
-		if(sb.getId() == 1){
-			tile.setValue((float) ((float) progress / (float) sb.getMax()));
-		}
-		else if(sb.getId() == 2){
-			tile.setTime((float) ((float) progress / 10f));
-		}
-		Log.e(TAG, "" + tile.getValue());
-		tile.invalidate();
-		this.invalidate();
+//		if(sb.getId() == 1){
+//			tile.setValue((float) ((float) progress / (float) sb.getMax()));
+//		}
+//		else if(sb.getId() == 2){
+//			tile.setTime((float) ((float) progress / 10f));
+//		}
+//		Log.e(TAG, "" + tile.getValue());
+//		tile.invalidate();
+//		this.invalidate();
 		
 	}
 

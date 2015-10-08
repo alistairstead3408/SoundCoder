@@ -1,47 +1,30 @@
 package stead.alistair.com.soundcoder;
 
-import java.lang.Math;
-
 import stead.alistair.com.soundcoder.GridSurfaceView.GridControl;
-
+import stead.alistair.com.tiles.Tile;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.PointF;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.os.Parcelable;
-import android.os.SystemClock;
 import android.os.Vibrator;
 import android.util.Log;
 import android.view.GestureDetector;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.SurfaceHolder;
+import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.View.OnLongClickListener;
+import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.SurfaceHolder.Callback;
-import android.view.SurfaceView;
-import android.view.View;
-import android.view.View.OnTouchListener;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.FrameLayout.LayoutParams;
-import android.widget.ImageView;
-import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
-// ----------------------------------------------------------------------
 
 public class ProgramActivity extends Activity {
 
@@ -50,8 +33,8 @@ public class ProgramActivity extends Activity {
 
 	/** Useful constants */
 	private final String TAG = "ProgramActivity";
-	private final int tileWidth = 80;
-	private final int tileHeight = 80;
+	private final int tileWidth = 180;
+	private final int tileHeight = 180;
 
 	/** Grid Components - the most important variables here */
 	private GridSurfaceView mGridSurfaceView;
@@ -62,26 +45,30 @@ public class ProgramActivity extends Activity {
 	public static Object drawingMutex = new Object();
 
 	/** Variables which identify the section that is being selected */
-	public final static int DRAG_NOTHING = 0;
-	public final static int DRAG_GRID = 1;
-	public final static int DRAG_TILE = 2;
+	public enum DragType{
+		DRAG_NOTHING,
+		DRAG_GRID,
+		DRAG_TILE
+	}
 
 	/** Used to let the UI thread know to open or close the settings view */
-	public final static int HANDLER_SETTINGS_OPEN = 0;
-	public final static int HANDLER_SETTINGS_CLOSE = 1;
-	public final static int HANDLER_SEEKBAR = 3;
-	public final static int HANDLER_SEEKBAR_REMOVE = 4;
-	public final static int HANDLER_TILE_STARTDRAG = 5;
-	public final static int HANDLER_TILE_DRAG = 6;
-	public final static int HANDLER_TILE_DROP = 7;
-	public final static int HANDLER_TOAST = 8;
-	public final static int HANDLER_SEEKBAR2 = 9;
+	public enum HandlerMessage{
+		HANDLER_SETTINGS_OPEN,
+		HANDLER_SETTINGS_CLOSE,
+		HANDLER_SEEKBAR,
+		HANDLER_SEEKBAR_REMOVE,
+		HANDLER_TILE_STARTDRAG,
+		HANDLER_TILE_DRAG,
+		HANDLER_TILE_DROP,
+		HANDLER_TOAST,
+		HANDLER_SEEKBAR2,
+	}
 
-	public FrameLayout mFl = null;
-	public RelativeLayout mRl = null;
-	public RelativeLayout.LayoutParams mParams = null;
-	public RelativeLayout.LayoutParams mPaletteParams = null;
-	private SettingsView mSettingsView = null;
+	public FrameLayout					mFl						= null;
+	public RelativeLayout				mRl						= null;
+	public RelativeLayout.LayoutParams	mParams					= null;
+	public RelativeLayout.LayoutParams	mPaletteParams			= null;
+	private SettingsView				mSettingsView			= null;
 	private RelativeLayout.LayoutParams mSettingsViewParams = null;
 
 	/** local copy of the mPalette */
@@ -89,10 +76,13 @@ public class ProgramActivity extends Activity {
 
 	/** Sensor Information */
 	SensorManager mSensorManager;
-	private float[] gravity = null;
-	private int lastKnownOrientation = -1;
-	private final static int ORIENTATION_NORMAL = 0, ORIENTATION_90CLOCK = 1,
-			ORIENTATION_90ANTI = 2, ORIENTATION_180 = 3;
+	private OrientationType lastKnownOrientation;
+	public enum OrientationType{
+		ORIENTATION_NORMAL, 
+		ORIENTATION_90CLOCK, 
+		ORIENTATION_90ANTI,
+		ORIENTATION_180;
+	}
 
 
 	/**
@@ -105,7 +95,7 @@ public class ProgramActivity extends Activity {
 	Button mDeleteButton;
 
 	/** Floating tile used for dragging from mPalette */
-	GridObjectView mFloatingTile;
+	Tile mFloatingTile;
 	RelativeLayout.LayoutParams mFloatingTileParams;
 
 	GestureDetector mGestureDetector;
@@ -180,19 +170,18 @@ public class ProgramActivity extends Activity {
 
 		synchronized (ProgramActivity.drawingMutex) {
 			try {
-				mPalette = new PaletteView(mRl.getContext(), blobData,mHandler);
+				mPalette = new PaletteView(mRl.getContext(), blobData,mHandler, tileWidth, tileHeight);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-		mGridSurfaceView = new GridSurfaceView(this, null, mHandler, 20, 20,
-				80, 80, 40, 0);
+		mGridSurfaceView = new GridSurfaceView(this, null, mHandler, 20, 20, tileWidth, tileHeight, 40, 0);
 		mRl.addView(mGridSurfaceView);
 		mGridThread = mGridSurfaceView.getThread();
 		mGridThreadHandler = mGridThread.getHandler();
 
-		mPaletteParams = new RelativeLayout.LayoutParams(140, 480);
-		mPaletteParams.leftMargin = -100;
+		mPaletteParams = new RelativeLayout.LayoutParams(tileWidth + 60, getWindowManager().getDefaultDisplay().getHeight());
+		mPaletteParams.leftMargin = -1 * (tileWidth + 20);
 		mPaletteParams.topMargin = 0;
 		mRl.addView(mPalette, mPaletteParams);
 		mPalette.bringToFront();
@@ -231,8 +220,7 @@ public class ProgramActivity extends Activity {
 
 				/** Send every touch event here to the mPalette */
 				if (me.getX() <= (mPaletteParams.leftMargin + mPaletteParams.width)
-						&& me.getX() > (mPaletteParams.leftMargin
-								+ mPaletteParams.width - 40)) {
+						&& me.getX() > (mPaletteParams.leftMargin + mPaletteParams.width - 40)) {
 					return false;
 				}
 
@@ -263,70 +251,45 @@ public class ProgramActivity extends Activity {
 
 		});
 		
-		lastKnownOrientation = ProgramActivity.ORIENTATION_180;
+		lastKnownOrientation = ProgramActivity.OrientationType.ORIENTATION_180;
 
-		/*
-		mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-		mSensorManager.registerListener(
-				new SensorEventListener() {
-					public void onAccuracyChanged(Sensor arg0, int arg1) {
-					}
-
-					public void onSensorChanged(SensorEvent sensorEvent) {
-						gravity = sensorEvent.values;
-						if (Math.abs(gravity[0]) > Math.abs(gravity[1])) {
-							if (gravity[0] > 0) {
-								lastKnownOrientation = ProgramActivity.ORIENTATION_180;
-							} else {
-								// This is the expected position
-								lastKnownOrientation = ProgramActivity.ORIENTATION_NORMAL;
-							}
-						} else {
-							if (gravity[1] > 0) {
-								lastKnownOrientation = ProgramActivity.ORIENTATION_90CLOCK;
-							} else {
-								lastKnownOrientation = ProgramActivity.ORIENTATION_90ANTI;
-							}
-
-						}
-					}
-				}, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-				SensorManager.SENSOR_DELAY_NORMAL);
-*/
+		
 	}
 
 	/**
 	 * This method changes the tiles position depending on where we think the
 	 * humans hand is (down, right)
 	 */
-	private Coordinate addOrientationOffset(float x, float y) {
+	private PointF addOrientationOffset(float x, float y) {
 
-		if (lastKnownOrientation == ProgramActivity.ORIENTATION_NORMAL) {
-			x += (1 * tileWidth);
-			y += (1 * tileHeight);
-			Coordinate temp = new Coordinate(x, y);
-			return temp;
-		} else if (lastKnownOrientation == ProgramActivity.ORIENTATION_180) {
+		PointF temp;
+		switch(lastKnownOrientation){
+		case ORIENTATION_180:
 			x -= (1 * tileWidth);
 			y -= (1 * tileHeight);
-			Coordinate temp = new Coordinate(x, y);
+			temp = new PointF(x, y);
 			return temp;
-		} else if (lastKnownOrientation == ProgramActivity.ORIENTATION_90CLOCK) {
-			x -= (1.2 * tileWidth);
-			y += (0.6 * tileHeight);
-			Coordinate temp = new Coordinate(x, y);
-			return temp;
-		} else if (lastKnownOrientation == ProgramActivity.ORIENTATION_90ANTI) {
+		case ORIENTATION_90ANTI:
 			x += (0.6 * tileWidth);
 			y -= (1.2 * tileHeight);
-			Coordinate temp = new Coordinate(x, y);
+			temp = new PointF(x, y);
 			return temp;
-		} else {
-			// return defailt
+		case ORIENTATION_90CLOCK:
+			x -= (1.2 * tileWidth);
+			y += (0.6 * tileHeight);
+			temp = new PointF(x, y);
+			return temp;
+		case ORIENTATION_NORMAL:
+			x += (1 * tileWidth);
+			y += (1 * tileHeight);
+			temp = new PointF(x, y);
+			return temp;
+		default:
 			x -= (1.2 * tileWidth);
 			y -= (1.2 * tileHeight);
-			Coordinate temp = new Coordinate(x, y);
+			temp = new PointF(x, y);
 			return temp;
+		
 		}
 	}
 
@@ -334,19 +297,20 @@ public class ProgramActivity extends Activity {
 	Handler mHandler = new Handler() {
 		public void handleMessage(Message msg) {
 			super.handleMessage(msg);
-			switch (msg.what) {
+			switch (HandlerMessage.values()[msg.what]) {
 			/**
 			 * This is called from GridControl to open the settings view when
 			 * the appropriate clicks have been made
 			 */
-			case ProgramActivity.HANDLER_SETTINGS_OPEN:
+			case HANDLER_SETTINGS_OPEN:
 				synchronized (drawingMutex) {
 					Log.e(TAG, "Handler Settings");
-					mSettingsView = new SettingsView((GridObjectView) msg.obj,
+					mSettingsView = new SettingsView((Tile) msg.obj,
 							mRl.getContext(), blobData, this);
 					if (mSettingsViewParams == null)
 						mSettingsViewParams = new RelativeLayout.LayoutParams(
-								800, 480);
+								getWindowManager().getDefaultDisplay().getWidth(), getWindowManager().getDefaultDisplay().getHeight());
+					
 					
 					mSettingsViewParams.leftMargin = 0;
 					mSettingsViewParams.topMargin = 0;
@@ -376,7 +340,7 @@ public class ProgramActivity extends Activity {
 			/**
 			 * Called from GridControl to close the settings view
 			 */
-			case ProgramActivity.HANDLER_SETTINGS_CLOSE:
+			case HANDLER_SETTINGS_CLOSE:
 				synchronized (drawingMutex) {
 					mRl.removeView(mSettingsView);
 					mSettingsView = null;
@@ -388,21 +352,17 @@ public class ProgramActivity extends Activity {
 			 * Signals that the user wants to drag a tile from the mPalette to
 			 * the grid
 			 */
-			case ProgramActivity.HANDLER_TILE_STARTDRAG:
+			case HANDLER_TILE_STARTDRAG:
 				synchronized (drawingMutex) {
 					Log.e(TAG, "Start Drag");
-					GridObjectView temp = (GridObjectView) msg.obj;
+					Tile temp = (Tile) msg.obj;
 					mFloatingTile = temp;
-					mFloatingTileParams = new RelativeLayout.LayoutParams(
-							tileWidth, tileHeight);
+					mFloatingTileParams = new RelativeLayout.LayoutParams(tileWidth, tileHeight);
 					if (msg.arg1 < mPalette.getLeft() + mPalette.getWidth()) {
-						mFloatingTileParams.leftMargin = msg.arg1
-								- (tileWidth / 2);
-						mFloatingTileParams.topMargin = msg.arg2
-								- (tileHeight / 2);
+						mFloatingTileParams.leftMargin = msg.arg1 - (tileWidth / 2);
+						mFloatingTileParams.topMargin = msg.arg2 - (tileHeight / 2);
 					} else {
-						Coordinate newCo = addOrientationOffset(msg.arg1,
-								msg.arg2);
+						PointF newCo = addOrientationOffset(msg.arg1, msg.arg2);
 						mFloatingTileParams.leftMargin = (int) newCo.x;
 						mFloatingTileParams.topMargin = (int) newCo.y;
 					}
@@ -413,20 +373,16 @@ public class ProgramActivity extends Activity {
 			 * Signals that the user wants to drag a tile from the mPalette to
 			 * the grid
 			 */
-			case ProgramActivity.HANDLER_TILE_DRAG:
+			case HANDLER_TILE_DRAG:
 				synchronized (drawingMutex) {
 					Log.e(TAG, "Continue Drag");
 					/** Over the palette don't add any offset, keep it in place */
 					if (msg.arg1 < mPalette.getLeft() + mPalette.getWidth()) {
-						mFloatingTileParams.leftMargin = msg.arg1
-								- (tileWidth / 2);
-						mFloatingTileParams.topMargin = msg.arg2
-								- (tileHeight / 2);
+						mFloatingTileParams.leftMargin = msg.arg1 - (tileWidth / 2);
+						mFloatingTileParams.topMargin = msg.arg2 - (tileHeight / 2);
 					} else {
 					/** Over the grid add the usual offset */
-						
-						Coordinate newCo = addOrientationOffset(msg.arg1,
-								msg.arg2);
+						PointF newCo = addOrientationOffset(msg.arg1,msg.arg2);
 						mFloatingTileParams.leftMargin = (int) newCo.x;
 						mFloatingTileParams.topMargin = (int) newCo.y;
 					}
@@ -440,7 +396,7 @@ public class ProgramActivity extends Activity {
 			 * Signals that the user wants to drag a tile from the mPalette to
 			 * the grid
 			 */
-			case ProgramActivity.HANDLER_TILE_DROP:
+			case HANDLER_TILE_DROP:
 				synchronized (drawingMutex) {
 					mRl.removeView(mFloatingTile);
 					if (msg.arg1 > mPalette.getLeft() + mPalette.getWidth()) {
@@ -455,82 +411,16 @@ public class ProgramActivity extends Activity {
 			/**
 			 * The mSettingsView needs the seekbar when in VAR mode
 			 */
-			case ProgramActivity.HANDLER_SEEKBAR:
-				if (mSettingsView != null) {
-					mSeekBar = new SeekBar(mRl.getContext());
-					mSeekBar.setMax(100);
-					mSeekBar.setId(1);
-					mSeekBar.setProgress((int) (100 * mSettingsView.tile
-							.getValue()));
-					mSeekBar.setOnSeekBarChangeListener(mSettingsView);
-					RelativeLayout.LayoutParams relativeLayoutParams = new RelativeLayout.LayoutParams(
-							360, 50);
-					relativeLayoutParams.leftMargin = 265;
-					relativeLayoutParams.topMargin = 200;
-					mRl.addView(mSeekBar, relativeLayoutParams);
-					RelativeLayout.LayoutParams buttonParams = new RelativeLayout.LayoutParams(
-							140, 60);
-					buttonParams.topMargin = 280;
-					buttonParams.leftMargin = 490;
-					mConfirmButton = new Button(mRl.getContext());
-					mConfirmButton.setText("Default");
-					mConfirmButton.setOnClickListener(new OnClickListener() {
-						public void onClick(View v) {
-							float x = mSettingsView.tile.getDefaultValue();
-							mSeekBar.setProgress((int) (x * mSeekBar.getMax()));
+			case HANDLER_SEEKBAR:
 
-						}
-					});
-					mRl.addView(mConfirmButton, buttonParams);
-				}
 				break;
-			case ProgramActivity.HANDLER_SEEKBAR2:
-				Log.e(TAG, "Handler Seekbar2");
-				if (mSettingsView != null) {
-					mSeekBar = new SeekBar(mRl.getContext());
-					mSeekBar.setId(1);
-					mSeekBar.setMax(100);
-					mSeekBar.setProgress((int) (100 * mSettingsView.tile
-							.getValue()));
-					mSeekBar.setOnSeekBarChangeListener(mSettingsView);
-					RelativeLayout.LayoutParams relativeLayoutParams = new RelativeLayout.LayoutParams(360, 50);
-					relativeLayoutParams.leftMargin = 265;
-					relativeLayoutParams.topMargin = 160;
-					mRl.addView(mSeekBar, relativeLayoutParams);
-					
-					//*********************
-					RelativeLayout.LayoutParams relativeLayoutParams2 = new RelativeLayout.LayoutParams(360, 50);
-					mSeekBar2 = new SeekBar(mRl.getContext());
-					mSeekBar2.setId(2);
-					mSeekBar2.setMax(100);
-					mSeekBar2.setProgress((int) (100 * mSettingsView.tile
-							.getValue()));
-					mSeekBar2.setOnSeekBarChangeListener(mSettingsView);
-					relativeLayoutParams2.leftMargin = 265;
-					relativeLayoutParams2.topMargin = 250;
-					mRl.addView(mSeekBar2, relativeLayoutParams2);
-					//*********************
-					RelativeLayout.LayoutParams buttonParams = new RelativeLayout.LayoutParams(
-							140, 60);
-					buttonParams.topMargin = 300;
-					buttonParams.leftMargin = 490;
-					mConfirmButton = new Button(mRl.getContext());
-					mConfirmButton.setText("Default");
-					mConfirmButton.setOnClickListener(new OnClickListener() {
-						public void onClick(View v) {
-							float x = mSettingsView.tile.getDefaultValue();
-							float y = mSettingsView.tile.getDefaultTime();
-							mSeekBar.setProgress((int) (x * mSeekBar.getMax()));
-							mSeekBar2.setProgress((int) (y));
-						}
-					});
-					mRl.addView(mConfirmButton, buttonParams);
-				}
+			case HANDLER_SEEKBAR2:
+
 				break;
 				
 				
 				
-			case ProgramActivity.HANDLER_TOAST:
+			case HANDLER_TOAST:
 				toast = Toast.makeText(ProgramActivity.this, (String) msg.obj, Toast.LENGTH_SHORT);
 				toast.show();
 				
@@ -540,7 +430,7 @@ public class ProgramActivity extends Activity {
 			 * When mSettingsView is finished, release seekmode and default
 			 * button
 			 */
-			case ProgramActivity.HANDLER_SEEKBAR_REMOVE:
+			case HANDLER_SEEKBAR_REMOVE:
 				mRl.removeView(mSeekBar);
 				mSeekBar = null;
 				mRl.removeView(mSeekBar2);
@@ -564,7 +454,7 @@ public class ProgramActivity extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		mGridSurfaceView.getThread().resume();
+//		mGridSurfaceView.getThread().resume();
 	}
 	
 	@Override

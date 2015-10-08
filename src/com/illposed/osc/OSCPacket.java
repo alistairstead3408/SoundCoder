@@ -1,6 +1,5 @@
 package com.illposed.osc;
 
-import com.illposed.osc.utility.*;
 
 /**
  * OSCPacket is the abstract superclass for the various

@@ -1,8 +1,6 @@
 package stead.alistair.com.soundcoder;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-
+import stead.alistair.com.soundcoder.jni.Processor;
 import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -25,15 +23,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.opencv.camera.NativePreviewer;
-import com.opencv.camera.NativeProcessor;
-import com.opencv.camera.NativeProcessor.PoolCallback;
-import com.opencv.jni.image_pool;
-import com.opencv.opengl.GL2CameraViewer;
-
-import stead.alistair.com.soundcoder.jni.cvcamera;
-import stead.alistair.com.soundcoder.jni.Processor;
-
 // ----------------------------------------------------------------------
 
 public class PerformanceActivity extends Activity {
@@ -54,7 +43,7 @@ public class PerformanceActivity extends Activity {
 	private int satThreshold = 60;
 	private int valThreshold = 60;
 
-	private NativePreviewer mPreview;
+//	private NativePreviewer mPreview;
 
 	static final int BEGIN_CAPTURE = 0;
 
@@ -62,7 +51,7 @@ public class PerformanceActivity extends Activity {
 	public boolean captureLineHueValues = false;
 	
 	/** The processor used to process each frame*/
-	public PerformanceProcessor captureProcessor;
+//	public PerformanceProcessor captureProcessor;
 	
 	/** The system state we will use when each rule is fired */
 	SystemState mSystemState = null;
@@ -90,8 +79,8 @@ public class PerformanceActivity extends Activity {
 				.getLongArray("bundleBlobData");
 
 		// Set up the relative layout so we can overlay the crayon
-		mPreview = new NativePreviewer(getApplication(), 640, 480);
-		frameLayout = new FrameLayout(this);
+//		mPreview = new NativePreviewer(getApplication(), 640, 480);
+//		frameLayout = new FrameLayout(this);
 		// This is actually a surface view
 		
 		//Initialise SystemState
@@ -122,11 +111,11 @@ public class PerformanceActivity extends Activity {
 					switch (mState) {
 					// This is the initial state
 					case PerformanceActivity.STARTING:
-						LinkedList<PoolCallback> defaultcallbackstack = new LinkedList<PoolCallback>();
-						defaultcallbackstack.addFirst(glview.getDrawCallback());
-						captureProcessor = new PerformanceProcessor();
-						defaultcallbackstack.addFirst(captureProcessor);
-						mPreview.addCallbackStack(defaultcallbackstack);
+//						LinkedList<PoolCallback> defaultcallbackstack = new LinkedList<PoolCallback>();
+//						defaultcallbackstack.addFirst(glview.getDrawCallback());
+//						captureProcessor = new PerformanceProcessor();
+//						defaultcallbackstack.addFirst(captureProcessor);
+//						mPreview.addCallbackStack(defaultcallbackstack);
 						mState = PerformanceActivity.RUNNING;
 						break;
 					case PerformanceActivity.RUNNING: // -> Pause
@@ -157,16 +146,16 @@ public class PerformanceActivity extends Activity {
 		LinearLayout vidlay = new LinearLayout(getApplication());
 
 		vidlay.setGravity(Gravity.CENTER);
-		vidlay.addView(mPreview, params);
+//		vidlay.addView(mPreview, params);
 		frameLayout.addView(vidlay);
 
 		// make the glview overlay ontop of video preview
-		mPreview.setZOrderMediaOverlay(false);
+//		mPreview.setZOrderMediaOverlay(false);
 
-		glview = new GL2CameraViewer(getApplication(), false, 0, 0);
-		glview.setZOrderMediaOverlay(true);
-		glview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
-				LayoutParams.FILL_PARENT));
+//		glview = new GL2CameraViewer(getApplication(), false, 0, 0);
+//		glview.setZOrderMediaOverlay(true);
+//		glview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
+//				LayoutParams.FILL_PARENT));
 
 		// Add the TextView via a LinearLayout
 		linearLayout = new LinearLayout(getApplicationContext());
@@ -174,7 +163,7 @@ public class PerformanceActivity extends Activity {
 				LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 		linearLayout.addView(tv);
 
-		frameLayout.addView(glview);
+//		frameLayout.addView(glview);
 		frameLayout.addView(linearLayout);
 
 		setContentView(frameLayout);
@@ -226,93 +215,93 @@ public class PerformanceActivity extends Activity {
 
 	// final processor so that these processor callbacks can access it
 	final Processor processor = new Processor();
-	private GL2CameraViewer glview;
+//	private GL2CameraViewer glview;
 
-	class PerformanceProcessor implements NativeProcessor.PoolCallback {
-
-		Long blobControlPointer = null;
-
-		public void process(int idx, image_pool pool, long timestamp,
-				NativeProcessor nativeProcessor) {
-
-			if (blobData == null)
-				Log.e(TAG, "BLOB DATA NULL***");
-			// Log.e(TAG, "knn address: " + blobData[1]);
-			if (blobControlPointer == null && !(blobData == null))
-				blobControlPointer = processor.getBlobControl(blobData[1]);// knn
-
-			//resultReference is a pointer to a list of results which we can loop through
-			long resultReference = processor.detectNewBlobs(blobControlPointer,
-					idx, pool, satThreshold, valThreshold);
-
-			/** Critical Area for detecting the blobs
-			*   Here we will be obtaining updates about the state of the system
-			*   We will need to update SystemState and then trigger the messages to be sent
-			*/
-			//<Blob ID> <Enter/Exit/See> <Blob Area> <others...> <Separator (-1)>
-			long currentValue;
-			int resultLength = processor.getLongLength(resultReference);
-			//This list stores all the system state changes
-			ArrayList<ArrayList<Long>> results = new ArrayList<ArrayList<Long>>();
-			//This list stores the current state change
-			ArrayList<Long> tempList = new ArrayList<Long>();
-			for(int i = 1; i < resultLength; i++){
-				currentValue = processor.getLongVal(resultReference, i);
-				if(currentValue == -1){ //it's a seperator
-					results.add(tempList);
-					tempList = new ArrayList<Long>();
-				}
-				else{
-					tempList.add(currentValue);
-				}
-			}
-			
-			//Just print a subset of what's going on for reference!
-			//Log.e(TAG, "Feedback Size: " + resultLength);
-			for(int i = 0; i < results.size(); i++){
-				String str = "BlobID: " + results.get(i).get(0) + ", Action: " + results.get(i).get(1);
-				if(results.get(i).size() >= 3) //area
-					str += ", " + results.get(i).get(2);
-				if(results.get(i).size() >= 4)
-					str += ", " + results.get(i).get(3);
-				Log.e(TAG, str);
-			}
-			Log.e(TAG, "-----------");
-			
-			
-			
-			if(mSystemState != null){
-				mSystemState.postStateChange(results);
-			}
-			
-			
-			
-			
-			
-			// mPreview.pauseSurface(); not sure why this is here
-		}
-	}
+//	class PerformanceProcessor implements NativeProcessor.PoolCallback {
+//
+//		Long blobControlPointer = null;
+//
+//		public void process(int idx, image_pool pool, long timestamp,
+//				NativeProcessor nativeProcessor) {
+//
+//			if (blobData == null)
+//				Log.e(TAG, "BLOB DATA NULL***");
+//			// Log.e(TAG, "knn address: " + blobData[1]);
+//			if (blobControlPointer == null && !(blobData == null))
+//				blobControlPointer = processor.getBlobControl(blobData[1]);// knn
+//
+//			//resultReference is a pointer to a list of results which we can loop through
+//			long resultReference = processor.detectNewBlobs(blobControlPointer,
+//					idx, pool, satThreshold, valThreshold);
+//
+//			/** Critical Area for detecting the blobs
+//			*   Here we will be obtaining updates about the state of the system
+//			*   We will need to update SystemState and then trigger the messages to be sent
+//			*/
+//			//<Blob ID> <Enter/Exit/See> <Blob Area> <others...> <Separator (-1)>
+//			long currentValue;
+//			int resultLength = processor.getLongLength(resultReference);
+//			//This list stores all the system state changes
+//			ArrayList<ArrayList<Long>> results = new ArrayList<ArrayList<Long>>();
+//			//This list stores the current state change
+//			ArrayList<Long> tempList = new ArrayList<Long>();
+//			for(int i = 1; i < resultLength; i++){
+//				currentValue = processor.getLongVal(resultReference, i);
+//				if(currentValue == -1){ //it's a seperator
+//					results.add(tempList);
+//					tempList = new ArrayList<Long>();
+//				}
+//				else{
+//					tempList.add(currentValue);
+//				}
+//			}
+//			
+//			//Just print a subset of what's going on for reference!
+//			//Log.e(TAG, "Feedback Size: " + resultLength);
+//			for(int i = 0; i < results.size(); i++){
+//				String str = "BlobID: " + results.get(i).get(0) + ", Action: " + results.get(i).get(1);
+//				if(results.get(i).size() >= 3) //area
+//					str += ", " + results.get(i).get(2);
+//				if(results.get(i).size() >= 4)
+//					str += ", " + results.get(i).get(3);
+//				Log.e(TAG, str);
+//			}
+//			Log.e(TAG, "-----------");
+//			
+//			
+//			
+//			if(mSystemState != null){
+//				mSystemState.postStateChange(results);
+//			}
+//			
+//			
+//			
+//			
+//			
+//			// mPreview.pauseSurface(); not sure why this is here
+//		}
+//	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
 		// clears the callback stack
-		mPreview.onPause();
-		glview.onPause();
+//		mPreview.onPause();
+//		glview.onPause();
 
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		glview.onResume();
+//		glview.onResume();
 
 		// add an initiall callback stack to the preview on resume...
 		// this one will just draw the frames to opengl
-		LinkedList<NativeProcessor.PoolCallback> cbstack = new LinkedList<PoolCallback>();
-		cbstack.add(glview.getDrawCallback());
-		mPreview.addCallbackStack(cbstack);
-		mPreview.onResume();
+//		LinkedList<NativeProcessor.PoolCallback> cbstack = new LinkedList<PoolCallback>();
+//		cbstack.add(glview.getDrawCallback());
+//		mPreview.addCallbackStack(cbstack);
+//		mPreview.onResume();
 
 	}
 	

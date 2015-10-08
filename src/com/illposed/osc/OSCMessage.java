@@ -3,7 +3,6 @@ package com.illposed.osc;
 import java.util.Enumeration;
 import java.util.Vector;
 
-import com.illposed.osc.utility.*;
 
 /**
  * An simple (non-bundle) OSC message. An OSC message is made up of 
@@ -32,7 +31,7 @@ public class OSCMessage extends OSCPacket {
 	 */
 	public OSCMessage() {
 		super();
-		arguments = new Vector();
+		arguments = new Vector<OSCPacket>();
 	}
 
 	/**
@@ -48,16 +47,17 @@ public class OSCMessage extends OSCPacket {
 	 * @param newAddress    the recepient of this OSC message
 	 * @param newArguments  the data sent to the receiver
 	 */
+	@SuppressWarnings("unchecked")
 	public OSCMessage(String newAddress, Object[] newArguments) {
 		super();
 		address = newAddress;
 		if (null != newArguments) {
-			arguments = new Vector(newArguments.length);
+			arguments = new Vector<OSCPacket>(newArguments.length);
 			for (int i = 0; i < newArguments.length; i++) {
 				arguments.add(newArguments[i]);
 			}
 		} else
-			arguments = new Vector();
+			arguments = new Vector<OSCPacket>();
 		init();
 	}
 	

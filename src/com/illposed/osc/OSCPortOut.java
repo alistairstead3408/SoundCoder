@@ -2,7 +2,6 @@ package com.illposed.osc;
 
 import java.net.*;
 import java.io.IOException;
-import com.illposed.osc.utility.OSCByteArrayToJavaConverter;
 
 /**
  * OSCPortOut is the class that sends OSC messages to a specific address and port.

@@ -1,7 +1,6 @@
 package stead.alistair.com.soundcoder;
 
-import java.util.LinkedList;
-
+import stead.alistair.com.soundcoder.jni.Processor;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
@@ -10,8 +9,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -22,17 +19,6 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.opencv.camera.NativePreviewer;
-import com.opencv.camera.NativeProcessor;
-import com.opencv.camera.NativeProcessor.PoolCallback;
-import com.opencv.jni.Mat;
-import com.opencv.jni.PtrMat;
-import com.opencv.jni.image_pool;
-import com.opencv.opengl.GL2CameraViewer;
-
-import stead.alistair.com.soundcoder.jni.cvcamera;
-import stead.alistair.com.soundcoder.jni.Processor;
 
 // ----------------------------------------------------------------------
 
@@ -46,7 +32,7 @@ public class TrainingActivity extends Activity {
 	private final static int STARTING = 0, FOCUS = 1, PICTURE_COMPLETED = 2,
 			RETURN_DATA = 3;
 
-	private NativePreviewer mPreview;
+//	private NativePreviewer mPreview;
 	private int satThreshold = 60; //40
 	private int valThreshold = 60;
 
@@ -56,7 +42,7 @@ public class TrainingActivity extends Activity {
 	private static final int DIALOG_TUTORIAL_FAST = 3;
 	private static final int DIALOG_TUTORIAL_BLOBS = 4;
 	public boolean captureLineHueValues = false;
-	public TrainingProcessor trainingProcessor;
+//	public TrainingProcessor trainingProcessor;
 	long oldknnVal = 0;
 
 	void toasts(int id) {
@@ -93,8 +79,8 @@ public class TrainingActivity extends Activity {
 		}
 
 		// Set up the relative layout so we can overlay the crayon
-		mPreview = new NativePreviewer(getApplication(), 640, 480);
-		frameLayout = new FrameLayout(this);
+//		mPreview = new NativePreviewer(getApplication(), 640, 480);
+//		frameLayout = new FrameLayout(this);
 		// This is actually a surface view
 
 		mState = TrainingActivity.STARTING;
@@ -106,7 +92,7 @@ public class TrainingActivity extends Activity {
 				case MotionEvent.ACTION_DOWN:
 					switch (mState) {
 					case TrainingActivity.FOCUS:
-						mPreview.postautofocus(0);
+//						mPreview.postautofocus(0);
 						break;
 					}
 					break;
@@ -119,12 +105,12 @@ public class TrainingActivity extends Activity {
 					switch (mState) {
 					// This is the initial state
 					case TrainingActivity.STARTING:
-						LinkedList<PoolCallback> defaultcallbackstack = new LinkedList<PoolCallback>();
-						defaultcallbackstack.addFirst(glview.getDrawCallback());
-						trainingProcessor = new TrainingProcessor();
-						defaultcallbackstack.addFirst(trainingProcessor);
-						toasts(DIALOG_TUTORIAL_BLOBS);
-						mPreview.addCallbackStack(defaultcallbackstack);
+//						LinkedList<PoolCallback> defaultcallbackstack = new LinkedList<PoolCallback>();
+//						defaultcallbackstack.addFirst(glview.getDrawCallback());
+//						trainingProcessor = new TrainingProcessor();
+//						defaultcallbackstack.addFirst(trainingProcessor);
+//						toasts(DIALOG_TUTORIAL_BLOBS);
+//						mPreview.addCallbackStack(defaultcallbackstack);
 						break;
 					// This is where the user is taking the proper picture.
 					case TrainingActivity.FOCUS:
@@ -135,10 +121,10 @@ public class TrainingActivity extends Activity {
 						break;
 					case TrainingActivity.PICTURE_COMPLETED:
 						// show the user the number of blobs
-						while (!trainingProcessor.finishedProcessing) {
-						}
-						tvHandler.obtainMessage(TrainingActivity.RETURN_DATA,
-								trainingProcessor.finalBlobData).sendToTarget();
+//						while (!trainingProcessor.finishedProcessing) {
+//						}
+//						tvHandler.obtainMessage(TrainingActivity.RETURN_DATA,
+//								trainingProcessor.finalBlobData).sendToTarget();
 						break;
 					case MotionEvent.ACTION_POINTER_DOWN:
 
@@ -167,16 +153,16 @@ public class TrainingActivity extends Activity {
 		LinearLayout vidlay = new LinearLayout(getApplication());
 
 		vidlay.setGravity(Gravity.CENTER);
-		vidlay.addView(mPreview, params);
+//		vidlay.addView(mPreview, params);
 		frameLayout.addView(vidlay);
 
 		// make the glview overlay ontop of video preview
-		mPreview.setZOrderMediaOverlay(false);
+//		mPreview.setZOrderMediaOverlay(false);
 
-		glview = new GL2CameraViewer(getApplication(), false, 0, 0);
-		glview.setZOrderMediaOverlay(true);
-		glview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
-				LayoutParams.FILL_PARENT));
+//		glview = new GL2CameraViewer(getApplication(), false, 0, 0);
+//		glview.setZOrderMediaOverlay(true);
+//		glview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
+//				LayoutParams.FILL_PARENT));
 
 		// Add the TextView via a LinearLayout
 		linearLayout = new LinearLayout(getApplicationContext());
@@ -184,7 +170,7 @@ public class TrainingActivity extends Activity {
 				LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 		linearLayout.addView(tv);
 
-		frameLayout.addView(glview);
+//		frameLayout.addView(glview);
 		frameLayout.addView(linearLayout);
 		frameLayout.setKeepScreenOn(true);
 		setContentView(frameLayout);
@@ -258,72 +244,72 @@ public class TrainingActivity extends Activity {
 
 	// final processor so that these processor callbacks can access it
 	final Processor processor = new Processor();
-	private GL2CameraViewer glview;
+//	private GL2CameraViewer glview;
 
-	class TrainingProcessor implements NativeProcessor.PoolCallback {
-
-		public boolean finishedProcessing = false;
-		public Long[] finalBlobData = null;
-
-		public void process(int idx, image_pool pool, long timestamp,
-				NativeProcessor nativeProcessor) {
-			if(oldknnVal != 0){
-				processor.deleteObject(oldknnVal);
-				oldknnVal = 0;
-			}
-			if (!captureLineHueValues) // Make sure this is !
-			{
-				processor.filterBackground(idx, pool, satThreshold,
-						valThreshold);
-			} else {
-				Log.e(TAG, "Doing blob stuff");
-				long blobDataPointer = processor.getBlobLabels(idx, pool,satThreshold, valThreshold);
-
-				int length = processor.getLongLength(blobDataPointer);
-				Long[] blobData = new Long[length]; // all-in length
-
-				for (int i = 0; i < length; i++) {
-					blobData[i] = processor.getLongVal(blobDataPointer, i);
-				}
-
-				// now we've got the appropriate data back from JNI, return it
-				// to SoundCoderActivity by sending it to the handler
-				finalBlobData = blobData;
-
-				// Long temp[] = new Long[1];
-				// temp[0] = blobDataPointer;
-				// finalBlobData = temp;
-				// captureLineHueValues = false;
-
-				mPreview.pauseSurface();
-				finishedProcessing = true;
-				
-			}
-		}
-
-	}
+//	class TrainingProcessor implements NativeProcessor.PoolCallback {
+//
+//		public boolean finishedProcessing = false;
+//		public Long[] finalBlobData = null;
+//
+//		public void process(int idx, image_pool pool, long timestamp,
+//				NativeProcessor nativeProcessor) {
+//			if(oldknnVal != 0){
+//				processor.deleteObject(oldknnVal);
+//				oldknnVal = 0;
+//			}
+//			if (!captureLineHueValues) // Make sure this is !
+//			{
+//				processor.filterBackground(idx, pool, satThreshold,
+//						valThreshold);
+//			} else {
+//				Log.e(TAG, "Doing blob stuff");
+//				long blobDataPointer = processor.getBlobLabels(idx, pool,satThreshold, valThreshold);
+//
+//				int length = processor.getLongLength(blobDataPointer);
+//				Long[] blobData = new Long[length]; // all-in length
+//
+//				for (int i = 0; i < length; i++) {
+//					blobData[i] = processor.getLongVal(blobDataPointer, i);
+//				}
+//
+//				// now we've got the appropriate data back from JNI, return it
+//				// to SoundCoderActivity by sending it to the handler
+//				finalBlobData = blobData;
+//
+//				// Long temp[] = new Long[1];
+//				// temp[0] = blobDataPointer;
+//				// finalBlobData = temp;
+//				// captureLineHueValues = false;
+//
+//				mPreview.pauseSurface();
+//				finishedProcessing = true;
+//				
+//			}
+//		}
+//
+//	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
 
 		// clears the callback stack
-		mPreview.onPause();
-		glview.onPause();
+//		mPreview.onPause();
+//		glview.onPause();
 
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		glview.onResume();
+//		glview.onResume();
 
 		// add an initiall callback stack to the preview on resume...
 		// this one will just draw the frames to opengl
-		LinkedList<NativeProcessor.PoolCallback> cbstack = new LinkedList<PoolCallback>();
-		cbstack.add(glview.getDrawCallback());
-		mPreview.addCallbackStack(cbstack);
-		mPreview.onResume();
+//		LinkedList<NativeProcessor.PoolCallback> cbstack = new LinkedList<PoolCallback>();
+//		cbstack.add(glview.getDrawCallback());
+//		mPreview.addCallbackStack(cbstack);
+//		mPreview.onResume();
 
 	}
 

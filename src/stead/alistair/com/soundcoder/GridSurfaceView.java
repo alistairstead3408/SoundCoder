@@ -2,12 +2,16 @@ package stead.alistair.com.soundcoder;
 
 import java.util.ArrayList;
 
+import stead.alistair.com.soundcoder.ProgramActivity.DragType;
+import stead.alistair.com.tiles.Tile;
+import stead.alistair.com.tiles.TileEmpty;
+import stead.alistair.com.tiles.TileReference;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
@@ -15,11 +19,8 @@ import android.os.Message;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
-import android.widget.RelativeLayout;
 
 public class GridSurfaceView extends SurfaceView implements
 		SurfaceHolder.Callback {
@@ -136,18 +137,18 @@ public class GridSurfaceView extends SurfaceView implements
 		Paint paintGreyFilled = new Paint();
 
 		/** The main grid object we'll use to store objects */
-		public ArrayList<ArrayList<GridObjectView>> gridMatrix = null;
+		public ArrayList<ArrayList<Tile>> gridMatrix = null;
 
 		/** Grid drag variable */
-		private Coordinate gridDragDown = null;
+		private PointF gridDragDown = null;
 
 		/** Touch Variables */
-		private Coordinate lastDownTouchCoordinate = new Coordinate(-1, -1);
-		private GridObjectView lastDownTouchObject = null;
+		private PointF lastDownTouchCoordinate = new PointF(-1, -1);
+		private Tile lastDownTouchObject = null;
 		private long lastDownTouchTime = 0;
-		public Coordinate currentMovePos = new Coordinate(-1, -1);
+		public PointF currentMovePos = new PointF(-1, -1);
 		public boolean currentlyMoving = false;
-		private Coordinate popupSelection = null;
+		private PointF popupSelection = null;
 
 		public final static int HANDLER_PALETTE_DROP_TILE = 0;
 		public final static int HANDLER_TILE_STARTDRAG = 1;
@@ -160,7 +161,7 @@ public class GridSurfaceView extends SurfaceView implements
 		public final static int HANDLER_VALIDATE = 8;
 
 		/** Reusable component, not used for persistence */
-		Coordinate gridPoint = new Coordinate(0, 0);
+		PointF gridPoint = new PointF(0, 0);
 		
 		/** 400ms is required before the "Drag" command is sent to the grid */
 		private boolean passedDownTimeRequirement = false;
@@ -234,11 +235,11 @@ public class GridSurfaceView extends SurfaceView implements
 		private void populateMatrix() {
 			synchronized (ProgramActivity.drawingMutex) {
 				if(PersistantObjects.getGrid() == null){
-					gridMatrix = new ArrayList<ArrayList<GridObjectView>>();
+					gridMatrix = new ArrayList<ArrayList<Tile>>();
 					for (int i = 0; i < cols; i++) {
-						ArrayList<GridObjectView> temp = new ArrayList<GridObjectView>();
+						ArrayList<Tile> temp = new ArrayList<Tile>();
 						for (int j = 0; j < rows; j++) {
-							temp.add(new GridObjectView(mContext));
+							temp.add(new TileEmpty(mContext, tileWidth, tileHeight));
 						}
 						gridMatrix.add(temp);
 					}
@@ -250,7 +251,7 @@ public class GridSurfaceView extends SurfaceView implements
 			}
 		}
 
-		public void set(int row, int col, GridObjectView object) {
+		public void set(int row, int col, Tile object) {
 			synchronized (ProgramActivity.drawingMutex) {
 				if (gridMatrix.size() >= row && gridMatrix.get(0).size() >= col) {
 					if(object != null)
@@ -272,7 +273,7 @@ public class GridSurfaceView extends SurfaceView implements
 			return mSystemState;
 		}
 
-		public void setPopUpSelection(Coordinate inputCoordinate) {
+		public void setPopUpSelection(PointF inputCoordinate) {
 			synchronized (ProgramActivity.drawingMutex) {
 				popupSelection = inputCoordinate;
 			}
@@ -284,7 +285,7 @@ public class GridSurfaceView extends SurfaceView implements
 			}
 		}
 
-		public synchronized GridObjectView get(int row, int col) {
+		public synchronized Tile get(int row, int col) {
 			synchronized (ProgramActivity.drawingMutex) {
 				return gridMatrix.get(row).get(col);
 			}
@@ -298,12 +299,12 @@ public class GridSurfaceView extends SurfaceView implements
 		 * @param rawY
 		 * @return
 		 */
-		public Coordinate getGridPoint(float rawX, float rawY) {
+		public PointF getGridPoint(float rawX, float rawY) {
 			synchronized (ProgramActivity.drawingMutex) {
 				rawX -= xGridOffset;
 				rawY -= yGridOffset;
-				Coordinate temp;
-				temp = new Coordinate((int) (rawX / tileWidth),
+				PointF temp;
+				temp = new PointF((int) (rawX / tileWidth),
 						(int) (rawY / tileHeight));
 				return temp;
 			}
@@ -320,12 +321,12 @@ public class GridSurfaceView extends SurfaceView implements
 		private void requestOffsetChange(float rawX, float rawY) {
 			synchronized (ProgramActivity.drawingMutex) {
 				if (rawX < XHARDOFFSET
-						&& rawX > -1 * ((cols * tileWidth) - 800)) {
+						&& rawX > -1 * ((cols * tileWidth) - mSurfaceHolder.getSurfaceFrame().width())) {
 					xGridOffset = rawX;
 				}
 
 				if (rawY < YHARDOFFSET
-						&& rawY > -1 * ((rows * tileHeight) - 480)) {
+						&& rawY > -1 * ((rows * tileHeight) - mSurfaceHolder.getSurfaceFrame().height())) {
 					yGridOffset = rawY;
 				}
 			}
@@ -339,19 +340,19 @@ public class GridSurfaceView extends SurfaceView implements
 		 * @param rawY
 		 * @return
 		 */
-		public/* synchronized */int getGridDragTypeAtPos(float rawX, float rawY) {
+		public DragType getGridDragTypeAtPos(float rawX, float rawY) {
 			synchronized (ProgramActivity.drawingMutex) {
 				// Already uses getGridPoint which takes offsets into
 				// consideration
 
 				if (rawX > xGridOffset) {
-					Coordinate co = getGridPoint(rawX, rawY);
+					PointF co = getGridPoint(rawX, rawY);
 					if (get((int) co.x, (int) co.y).getType() == TileReference.TYPE_EMPTY) {
-						return ProgramActivity.DRAG_GRID;
+						return ProgramActivity.DragType.DRAG_GRID;
 					} else
-						return ProgramActivity.DRAG_TILE;
+						return ProgramActivity.DragType.DRAG_TILE;
 				} else {
-					return ProgramActivity.DRAG_NOTHING;
+					return ProgramActivity.DragType.DRAG_NOTHING;
 				}
 			}
 
@@ -368,9 +369,9 @@ public class GridSurfaceView extends SurfaceView implements
 					gridPoint = GridControl.this.getGridPoint(msg.arg1,msg.arg2);
 					if(get((int)gridPoint.x, (int) gridPoint.y).getType() == TileReference.TYPE_EMPTY)
 					{
-						set((int) gridPoint.x, (int) gridPoint.y,(GridObjectView) msg.obj);
+						set((int) gridPoint.x, (int) gridPoint.y,(Tile) msg.obj);
 						currentlyMoving = false;
-						Coordinate newPoint = getGridPoint((int) msg.arg1,	(int) msg.arg2);
+						PointF newPoint = getGridPoint((int) msg.arg1,	(int) msg.arg2);
 						popupSelection = newPoint;
 					}
 					break;
@@ -378,12 +379,12 @@ public class GridSurfaceView extends SurfaceView implements
 				 * Regardless of grid or gridobject used to drag
 				 */
 				case GridControl.HANDLER_TILE_STARTDRAG:
-					int gridPosType = GridControl.this.getGridDragTypeAtPos(
+					ProgramActivity.DragType gridPosType = GridControl.this.getGridDragTypeAtPos(
 							msg.arg1, msg.arg2);
-					if (gridPosType == ProgramActivity.DRAG_GRID) {
-						gridDragDown = new Coordinate((msg.arg1 - xGridOffset),
+					if (gridPosType == ProgramActivity.DragType.DRAG_GRID) {
+						gridDragDown = new PointF((msg.arg1 - xGridOffset),
 								(msg.arg2 - yGridOffset));
-					} else if (gridPosType == ProgramActivity.DRAG_TILE) {
+					} else if (gridPosType == ProgramActivity.DragType.DRAG_TILE) {
 						// Setting gridDragDown helps differentiate from
 						// grid/tile event later
 						gridDragDown = null;
@@ -402,18 +403,18 @@ public class GridSurfaceView extends SurfaceView implements
 					
 					currentlyMoving = true;
 					
-					currentMovePos = new Coordinate(msg.arg1, msg.arg2);
+					currentMovePos = new PointF(msg.arg1, msg.arg2);
 					popupSelection = currentMovePos;
 					// Method to allow grid movement after certain points on
 					// the canvas
-					if (msg.arg1 > 700)
+					if (msg.arg1 > mSurfaceHolder.getSurfaceFrame().width()-100)
 						requestOffsetChange(xGridOffset - 5, yGridOffset);
 					else if (msg.arg1 < 100)
 						requestOffsetChange(xGridOffset + 5, yGridOffset);
-					if (msg.arg2 > 380)
+					if (msg.arg2 > mSurfaceHolder.getSurfaceFrame().height()-100)
 						requestOffsetChange(xGridOffset, yGridOffset - 5);
 					else if (msg.arg2 < 100)
-						requestOffsetChange(xGridOffset, yGridOffset + 5);
+						requestOffsetChange(xGridOffset, yGridOffset + 5); //80
 					break;
 				/**
 				 * Just updates dragging position
@@ -423,22 +424,22 @@ public class GridSurfaceView extends SurfaceView implements
 						requestOffsetChange((msg.arg1 - gridDragDown.x),
 								(msg.arg2 - gridDragDown.y));
 					} else { // Tile drag
-						if((SystemClock.elapsedRealtime() - mDownTime) > 400 || getGridPoint(msg.arg1, msg.arg2).equals(lastDownTouchCoordinate) == false){
+						if((SystemClock.elapsedRealtime() - mDownTime) > (mSurfaceHolder.getSurfaceFrame().width()/2) || getGridPoint(msg.arg1, msg.arg2).equals(lastDownTouchCoordinate) == false){
 							if(passedDownTimeRequirement == false){
-								set((int) lastDownTouchCoordinate.x,(int) lastDownTouchCoordinate.y,new GridObjectView(mContext));
+								set((int) lastDownTouchCoordinate.x,(int) lastDownTouchCoordinate.y,new TileEmpty(mContext, tileWidth, tileHeight));
 								passedDownTimeRequirement = true;
 							}
 							currentlyMoving = true;
 							
-							currentMovePos = new Coordinate(msg.arg1, msg.arg2);
+							currentMovePos = new PointF(msg.arg1, msg.arg2);
 							popupSelection = currentMovePos;
 							// Method to allow grid movement after certain points on
 							// the canvas
-							if (msg.arg1 > 700)
+							if (msg.arg1 > (mSurfaceHolder.getSurfaceFrame().width() - 100))
 								requestOffsetChange(xGridOffset - 5, yGridOffset);
 							else if (msg.arg1 < 100)
 								requestOffsetChange(xGridOffset + 5, yGridOffset);
-							if (msg.arg2 > 380)
+							if (msg.arg2 > (mSurfaceHolder.getSurfaceFrame().height() - 100))
 								requestOffsetChange(xGridOffset, yGridOffset - 5);
 							else if (msg.arg2 < 100)
 								requestOffsetChange(xGridOffset, yGridOffset + 5);
@@ -456,7 +457,7 @@ public class GridSurfaceView extends SurfaceView implements
 					} else {
 						
 						currentlyMoving = false;
-						Coordinate newPoint = getGridPoint((int) msg.arg1,	(int) msg.arg2);
+						PointF newPoint = getGridPoint((int) msg.arg1,	(int) msg.arg2);
 						popupSelection = newPoint;
 						Log.e(TAG, "Grid Set : " + newPoint.toString());
 						if (get((int) newPoint.x, (int) newPoint.y).getType() == TileReference.TYPE_EMPTY){
@@ -479,12 +480,12 @@ public class GridSurfaceView extends SurfaceView implements
 					break;
 				case GridControl.HANDLER_DOUBLETAP:
 					gridPoint = GridControl.this.getGridPoint(msg.arg1, msg.arg2);
-					GridObjectView temp = get((int) gridPoint.x, (int)gridPoint.y);
+					Tile temp = get((int) gridPoint.x, (int)gridPoint.y);
 					if(temp.getType() != TileReference.TYPE_EMPTY)
-						mHandler.obtainMessage(ProgramActivity.HANDLER_SETTINGS_OPEN, temp).sendToTarget();
+						mHandler.obtainMessage(ProgramActivity.HandlerMessage.HANDLER_SETTINGS_OPEN.ordinal(), temp).sendToTarget();
 					break;
 				case GridControl.HANDLER_DELETE_SELECTED_TILE:
-					set((int) popupSelection.x, (int)popupSelection.y, new GridObjectView(mContext));
+					set((int) popupSelection.x, (int)popupSelection.y, new TileEmpty(mContext, tileWidth, tileHeight));
 					popupSelection = null;
 					break;
 				case GridControl.HANDLER_VALIDATE:
@@ -614,7 +615,7 @@ public class GridSurfaceView extends SurfaceView implements
 			
 			if(currentlyMoving){
 				
-				Coordinate tileOffset = addOrientationOffset(currentMovePos.x,
+				PointF tileOffset = addOrientationOffset(currentMovePos.x,
 						currentMovePos.y);
 				if (lastDownTouchObject != null) {
 					synchronized (ProgramActivity.drawingMutex) {
@@ -638,11 +639,11 @@ public class GridSurfaceView extends SurfaceView implements
 		 * @param y
 		 * @return
 		 */
-		private Coordinate addOrientationOffset(float x, float y) {
+		private PointF addOrientationOffset(float x, float y) {
 			synchronized (ProgramActivity.drawingMutex) {
 				x -= (1 * tileWidth);
 				y -= (1 * tileHeight);
-				Coordinate temp = new Coordinate(x, y);
+				PointF temp = new PointF(x, y);
 				return temp;
 			}
 		}

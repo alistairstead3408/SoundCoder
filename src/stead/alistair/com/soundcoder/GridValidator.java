@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import stead.alistair.com.tiles.Tile;
+import stead.alistair.com.tiles.TileReference;
+
 import android.os.Handler;
 import android.util.Log;
 
@@ -15,7 +18,7 @@ public class GridValidator {
 	/** This method evalutes the soundness of the given rules so that they can be used later 
 	 * @param grid - a matrix of tile objects
 	 * */
-	public static boolean validate(ArrayList<ArrayList<GridObjectView>> grid, Handler mHandler){
+	public static boolean validate(ArrayList<ArrayList<Tile>> grid, Handler mHandler){
 		//Assign a number to each statement, regardless of synth no
 		int [] [] catagoryMatrix = new int [grid.size()] [grid.get(0).size()]; // x, y
 		
@@ -96,24 +99,24 @@ public class GridValidator {
 		return labelMatrix;
 	}
 	
-	private static boolean semanticValidation(ArrayList<ArrayList<GridObjectView>> grid, Handler mHandler, int rows, int cols, int [][] labelMatrix, int [][] catagoryMatrix){
+	private static boolean semanticValidation(ArrayList<ArrayList<Tile>> grid, Handler mHandler, int rows, int cols, int [][] labelMatrix, int [][] catagoryMatrix){
 		/* Does validation semantically - i.e. checks the number of types in each sentence */
 		/* A neighbour is defined as being any tile connected with any other on the 4 sides */ 
-		HashMap<Integer, ArrayList<GridObjectView>> sentences = new HashMap<Integer, ArrayList<GridObjectView>>();
+		HashMap<Integer, ArrayList<Tile>> sentences = new HashMap<Integer, ArrayList<Tile>>();
 		for(int i = 0; i < rows; i++){
 			for(int j = 0; j < cols; j++){
 				// if we care about the value add it to the appropriate sentence arraylist
 				if(labelMatrix[i][j] != 0){
 					//if there's already an entry for this sentence, add to it
 					if(sentences.containsKey(labelMatrix[i][j])){
-						ArrayList<GridObjectView> temp = (ArrayList<GridObjectView>) sentences.get(labelMatrix[i][j]);
-						GridObjectView tempGridObject = grid.get(j).get(i);
+						ArrayList<Tile> temp = (ArrayList<Tile>) sentences.get(labelMatrix[i][j]);
+						Tile tempGridObject = grid.get(j).get(i);
 						temp.add(tempGridObject);
 						
 					}
 					else{
-						GridObjectView tempGridObject = grid.get(j).get(i);
-						ArrayList<GridObjectView> tempArrayList = new ArrayList<GridObjectView>();
+						Tile tempGridObject = grid.get(j).get(i);
+						ArrayList<Tile> tempArrayList = new ArrayList<Tile>();
 						tempArrayList.add(tempGridObject);
 						sentences.put(labelMatrix[i][j], tempArrayList);
 					}
@@ -126,7 +129,7 @@ public class GridValidator {
 		while(it.hasNext()){
 			Object nextKey = it.next();
 			Object objSentence =  sentences.get(nextKey);
-				ArrayList<GridObjectView> sentence = (ArrayList<GridObjectView>) objSentence;
+				ArrayList<Tile> sentence = (ArrayList<Tile>) objSentence;
 				Log.e(TAG, "sentence size: " + sentence.size());
 				printSentence(sentence);
 				if(!validateSentence(sentence, mHandler)){
@@ -151,7 +154,7 @@ public class GridValidator {
 	}
 	
 	/** This method runs on the assumption that this grid has already been validated */
-	public static SystemState getSystemState(ArrayList<ArrayList<GridObjectView>> grid, Handler mHandler, float [] blobData){
+	public static SystemState getSystemState(ArrayList<ArrayList<Tile>> grid, Handler mHandler, float [] blobData){
 
 		int [] [] catagoryMatrix = new int [grid.size()] [grid.get(0).size()]; // x, y
 		
@@ -167,21 +170,21 @@ public class GridValidator {
 		
 		int [][] labelMatrix = getLabelMatrix(rows, cols, catagoryMatrix);
 		
-		HashMap<Integer, ArrayList<GridObjectView>> sentences = new HashMap<Integer, ArrayList<GridObjectView>>();
+		HashMap<Integer, ArrayList<Tile>> sentences = new HashMap<Integer, ArrayList<Tile>>();
 		for(int i = 0; i < rows; i++){
 			for(int j = 0; j < cols; j++){
 				// if we care about the value add it to the appropriate sentence arraylist
 				if(labelMatrix[i][j] != 0){
 					//if there's already an entry for this sentence, add to it
 					if(sentences.containsKey(labelMatrix[i][j])){
-						ArrayList<GridObjectView> temp = (ArrayList<GridObjectView>) sentences.get(labelMatrix[i][j]);
-						GridObjectView tempGridObject = grid.get(j).get(i);
+						ArrayList<Tile> temp = (ArrayList<Tile>) sentences.get(labelMatrix[i][j]);
+						Tile tempGridObject = grid.get(j).get(i);
 						temp.add(tempGridObject);
 						
 					}
 					else{
-						GridObjectView tempGridObject = grid.get(j).get(i);
-						ArrayList<GridObjectView> tempArrayList = new ArrayList<GridObjectView>();
+						Tile tempGridObject = grid.get(j).get(i);
+						ArrayList<Tile> tempArrayList = new ArrayList<Tile>();
 						tempArrayList.add(tempGridObject);
 						sentences.put(labelMatrix[i][j], tempArrayList);
 					}
@@ -222,7 +225,7 @@ public class GridValidator {
 	
 	
 	/** Requirements are <Synth>(1*) <Guard> (1*) <Modifier> (1) <Property> (1*) in any order*/
-	private static boolean validateSentence(ArrayList<GridObjectView> catagoryArray, Handler mHandler){
+	private static boolean validateSentence(ArrayList<Tile> catagoryArray, Handler mHandler){
 		int identifiers = 0, guards = 0, modifiers = 0, properties = 0, anomolies = 0;
 		for(int i = 0; i < catagoryArray.size(); i++){
 			switch(TileReference.getCatagory(catagoryArray.get(i).getIconID())){
@@ -261,7 +264,7 @@ public class GridValidator {
 	
 
 	
-	public static void printSentence(ArrayList<GridObjectView> sentence){
+	public static void printSentence(ArrayList<Tile> sentence){
 		for(int i = 0; i < sentence.size(); i++){
 			Log.e(TAG, sentence.get(i).toString());
 		}

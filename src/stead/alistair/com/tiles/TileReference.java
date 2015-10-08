@@ -1,4 +1,6 @@
-package stead.alistair.com.soundcoder;
+package stead.alistair.com.tiles;
+
+import stead.alistair.com.soundcoder.R;
 
 public class TileReference {
 
